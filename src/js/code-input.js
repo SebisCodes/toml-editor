@@ -8,10 +8,10 @@
 
 import { getIndentUnit } from './datatree.js?v=13';
 import { state, areas, ui } from './state.js?v=2';
-import { renderCode, syncScroll } from './code-view.js?v=4';
-import { startModelUpdate } from './model.js?v=4';
-import { addHistoryStep, undo, redo } from './history.js?v=4';
-import { saveToStorage } from './storage.js?v=4';
+import { renderCode, syncScroll } from './code-view.js?v=5';
+import { startModelUpdate } from './model.js?v=5';
+import { addHistoryStep, undo, redo } from './history.js?v=5';
+import { saveToStorage } from './storage.js?v=5';
 
 /** Code longer than this waits longer before it is read again. */
 const LARGE_CODE_LENGTH = 200000;

@@ -9,12 +9,12 @@ import { BLANK } from './samples.js?v=4';
 import { store } from './files.js?v=8';
 import { state, areas, ui, AI_DOCUMENT } from './state.js?v=2';
 import { getLineIndex, getColumnIndex, getLinePosition } from './text-position.js?v=2';
-import { getSchemaInfo } from './model.js?v=4';
-import { setCode } from './history.js?v=4';
-import { showCodePosition } from './code-view.js?v=4';
-import { editData } from './tree-edit.js?v=4';
-import { selectNodeAtCursor } from './tree-view.js?v=4';
-import { openDocument } from './documents.js?v=4';
+import { getSchemaInfo } from './model.js?v=5';
+import { setCode } from './history.js?v=5';
+import { showCodePosition } from './code-view.js?v=5';
+import { editData } from './tree-edit.js?v=5';
+import { selectNodeAtCursor } from './tree-view.js?v=5';
+import { openDocument } from './documents.js?v=5';
 import { getTemplatePath } from './tree-views.js?v=1';
 
 /**

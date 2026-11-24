@@ -7,8 +7,8 @@ import { escapeHtml } from './datatree.js?v=13';
 import { getTreeNodeAtCode } from './tree-views.js?v=1';
 import { state, areas, ui, NARROW_SCREEN } from './state.js?v=2';
 import { getLineIndex, getColumnIndex } from './text-position.js?v=2';
-import { showCodePosition, getProblemClass } from './code-view.js?v=4';
-import { showPane } from './layout.js?v=4';
+import { showCodePosition, getProblemClass } from './code-view.js?v=5';
+import { showPane } from './layout.js?v=5';
 
 /** The most problems the list shows. */
 const MAX_LISTED_PROBLEMS = 80;

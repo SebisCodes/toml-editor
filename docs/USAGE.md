@@ -114,9 +114,8 @@ other documents. Every change is one step for Undo.
 ## Side panel
 
 The side panel holds **Value**, **Insert**, **Convert** and **Schema**. The button at the top right
-of the work area opens it over the tree, below the tree's bar, and closes it again (Escape too);
-it is closed when the editor opens. The bar's controls stay in view and usable while it is open.
-On a phone it is the view **Edit**.
+of the work area opens it as a column right of the tree, which gets narrower, and closes it again;
+it is closed when the editor opens. On a phone it is the view **Edit**.
 
 ## Templates with placeholders
 

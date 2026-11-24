@@ -8,7 +8,7 @@
 import { escapeHtml, formatPath, getAliasTarget } from './datatree.js?v=13';
 import { state, areas, ui, getElement, showToast, hasData, formatSize } from './state.js?v=2';
 import { getLineIndex, getColumnIndex } from './text-position.js?v=2';
-import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=4';
+import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=5';
 import { getTreeCodeRange } from './tree-views.js?v=1';
 
 /** The types of the type menu, in its order. */

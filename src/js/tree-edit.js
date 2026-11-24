@@ -12,9 +12,9 @@ import { isDateTime } from './toml.js?v=7';
 import {
     state, areas, EDITOR, SYNTAX_ERROR_FIRST, CHOOSE_VALUE, ROOT_IS_VALUE, hasData, showToast,
 } from './state.js?v=2';
-import { setCode, addPendingHistoryStep } from './history.js?v=4';
-import { showCodePosition } from './code-view.js?v=4';
-import { renderNode } from './node-panel.js?v=4';
+import { setCode, addPendingHistoryStep } from './history.js?v=5';
+import { showCodePosition } from './code-view.js?v=5';
+import { renderNode } from './node-panel.js?v=5';
 import { getTreeCodeRange, getTreePlace, getTemplateChange } from './tree-views.js?v=1';
 
 /**

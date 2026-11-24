@@ -9,7 +9,7 @@ import { parse, importYamlLibrary, getModelValue, hasTemplateTags, TEMPLATE_FORM
 import { formatToml } from './toml.js?v=7';
 import { convertToJson, convertToYaml, convertToCsv, convertToXml, convertToJsonl, getTreeText } from './convert.js?v=14';
 import { state, areas, EDITOR, FIX_SYNTAX_ERROR, NO_DATA, hasData, showToast, translate } from './state.js?v=2';
-import { setCode } from './history.js?v=4';
+import { setCode } from './history.js?v=5';
 
 /** The indentation YAML gets when none is chosen. */
 const YAML_INDENT = 2;

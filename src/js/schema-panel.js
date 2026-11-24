@@ -9,8 +9,8 @@ import { getInferredSchema } from './convert.js?v=14';
 import { convertToToml } from './toml.js?v=7';
 import { store } from './files.js?v=8';
 import { state, ui, STORAGE_FULL, FIX_SYNTAX_ERROR, showToast } from './state.js?v=2';
-import { getSchemaInfo, clearSchemaCache, updateModel } from './model.js?v=4';
-import { openDocument, createDocument } from './documents.js?v=4';
+import { getSchemaInfo, clearSchemaCache, updateModel } from './model.js?v=5';
+import { openDocument, createDocument } from './documents.js?v=5';
 
 /** The longest part of a $schema address the tab shows. */
 const MAX_SCHEMA_ADDRESS_LENGTH = 200;

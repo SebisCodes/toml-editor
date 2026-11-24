@@ -7,8 +7,8 @@ import { parse, mergeData, getModelValue } from './datatree.js?v=13';
 import { store } from './files.js?v=8';
 import { VIEWER } from './sync.js?v=24';
 import { state, ui, EDITOR, AI_DOCUMENT, showToast } from './state.js?v=2';
-import { setCode } from './history.js?v=4';
-import { createDocument, openDocument } from './documents.js?v=4';
+import { setCode } from './history.js?v=5';
+import { createDocument, openDocument } from './documents.js?v=5';
 
 /**
  * Which document a received document goes to.

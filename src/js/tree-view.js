@@ -9,9 +9,9 @@
 
 import { createTree, formatPath, getTemplateEditRefusal } from './datatree.js?v=13';
 import { state, areas, ui, getElement, showToast, translate, SYNTAX_ERROR_FIRST, CHOOSE_VALUE } from './state.js?v=2';
-import { showCodePosition, showLineBand } from './code-view.js?v=4';
-import { renderNode } from './node-panel.js?v=4';
-import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=4';
+import { showCodePosition, showLineBand } from './code-view.js?v=5';
+import { renderNode } from './node-panel.js?v=5';
+import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=5';
 import { getTreeCodeRange, getTreeNodeAtCode, getExampleEditRefusal } from './tree-views.js?v=1';
 
 /** How long the search waits after typing, in milliseconds. */

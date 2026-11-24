@@ -7,7 +7,7 @@
 import { getIndentUnit } from './datatree.js?v=13';
 import { saveFile, getSafeName } from './util.js?v=3';
 import { state, ui, EDITOR, getElement, showToast } from './state.js?v=2';
-import { getConvertedText, formatDocument } from './conversion.js?v=4';
+import { getConvertedText, formatDocument } from './conversion.js?v=5';
 
 /** The file extension of each conversion. */
 const CONVERT_EXTENSIONS = { yaml: 'yaml', csv: 'csv', xml: 'xml', txt: 'txt', json: 'json', jsonl: 'jsonl', toml: 'toml' };

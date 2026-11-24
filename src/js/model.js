@@ -16,13 +16,13 @@ import { parse, getModelValue, getSchemaProblems, TooManyValues } from './datatr
 import { store } from './files.js?v=8';
 import { state, areas, ui, EDITOR, getElement } from './state.js?v=2';
 import { getLineIndexIn } from './text-position.js?v=2';
-import { renderProblems } from './problems.js?v=4';
-import { renderMarks } from './code-view.js?v=4';
-import { renderNode } from './node-panel.js?v=4';
-import { renderSchema } from './schema-panel.js?v=4';
+import { renderProblems } from './problems.js?v=5';
+import { renderMarks } from './code-view.js?v=5';
+import { renderNode } from './node-panel.js?v=5';
+import { renderSchema } from './schema-panel.js?v=5';
 import { updateTreeView, getTreeModel } from './tree-views.js?v=1';
-import { renderTemplateControls } from './template-panel.js?v=1';
-import { renderConvertResult } from './convert-panel.js?v=4';
+import { renderTemplateControls } from './template-panel.js?v=2';
+import { renderConvertResult } from './convert-panel.js?v=5';
 
 /** How long the model waits after typing, in milliseconds. */
 const DEFAULT_MODEL_DELAY = 200;
