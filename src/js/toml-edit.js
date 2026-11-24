@@ -11,14 +11,15 @@
  *      to select.
  */
 
-import { getPath, getNodeAtPath, convertValue, getFreeKey } from './datatree.js?v=12';
-import { parseToml, isTableNode } from './toml-read.js?v=3';
-import { formatTomlKey, formatInlineValue, formatArray, convertToToml, isDateTime, isPlainObject, isTableArray, getHeaderText, getTableLines } from './toml-write.js?v=3';
+import { getPath, getNodeAtPath, convertValue, getFreeKey, checkTemplateEdit } from './datatree.js?v=13';
+import { isTableNode } from './toml-read.js?v=3';
+import { readTomlTemplate } from './toml-template.js?v=1';
+import { formatTomlKey, formatInlineValue, formatArray, convertToToml, isDateTime, isPlainObject, isTableArray, getHeaderText, getTableLines } from './toml-write.js?v=4';
 import {
     getValueText, checkNotNull, getSectionBoundary, getSectionTable, getCodeWithLine, getCodeWithLineIn, getCodeWithSection,
     getCodeWithSections, getCodeWithReplacedSections, getCodeWithoutSpans, getSwappedCode, getCodeWithCopy,
     getCodeWithInlineItem, getCodeWithoutInlineItem,
-} from './toml-places.js?v=3';
+} from './toml-places.js?v=4';
 import { getLineStart, getTrimmedEnd, mergeRanges, mergeLooseRanges, getSpliced } from './toml-text.js?v=2';
 
 /** A number as typed, which a change keeps as it is written when it means the same value. */
@@ -42,7 +43,7 @@ const DIFFERENT_PLACES = 'This entry is written in several places of the code - 
  * @throws {Error} with a message for the user when the change is not possible in TOML.
  */
 export function editTomlCode(code, change) {
-    const model = parseToml(code);
+    const model = readTomlTemplate(code);
     if (model.broken) throw new Error('The code has a syntax error - fix it first');
     switch (change.kind) {
         case 'type': return getCodeWithType(code, change);
@@ -127,7 +128,19 @@ function getCodeWithValue(code, model, change) {
     if (node.type === 'array' && node.aot && isTableArray(value)) return getCodeWithReplacedSections(code, entry, value, path);
     // another type: the table's places go, a key = value line takes its place
     const removed = getCodeWithoutSpans(code, entry);
-    return { code: getCodeWithLineIn(removed, getPath(entry.parent), entry.key, raw ?? (asDate ? value : getValueText(value)), Math.min(mergeRanges(entry.spans)[0][0], removed.length)), path };
+    const sectionPath = isDottedLinesOnly(entry) ? getPath(getSectionTable(entry.parent)) : null;
+    return { code: getCodeWithLineIn(removed, getPath(entry.parent), entry.key, raw ?? (asDate ? value : getValueText(value)), Math.min(mergeRanges(entry.spans)[0][0], removed.length), sectionPath), path };
+}
+
+/**
+ * Tells whether an entry stands only in lines of a table made by dotted keys (`x.y.c = 1`), so
+ * that table's section holds all of it.
+ * @param {object} entry - the entry.
+ * @returns {boolean} true for an entry written only in lines of a dotted table.
+ */
+function isDottedLinesOnly(entry) {
+    const table = entry.parent;
+    return !!(table.entry && table.dotted && !table.headers && (entry.mode === 'line' || (getPlaceKind(entry) === 'line' && !isLineAndSection(entry))));
 }
 
 /**
@@ -341,16 +354,16 @@ function getCodeWithoutEntry(code, model, change) {
 
 /**
  * Returns the code with a table that existed only through a removed entry written back, empty:
- * as "key = {}" where it was a dotted key, else as a [header].
+ * as "key = {}" where dotted keys made it, else as a [header].
  * @param {string} code - the code without the entry.
  * @param {object} entry - the removed entry.
  * @param {object} box - its table.
  * @returns {string} the new code.
  */
 function getCodeWithEmptyTable(code, entry, box) {
-    if (getNodeAtPath(parseToml(code).docs[0].root, getPath(box))) return code;
-    const at = mergeRanges(entry.spans)[0][0];
-    if (entry.mode === 'line' && box.dotted) {
+    if (getNodeAtPath(readTomlTemplate(code).docs[0].root, getPath(box))) return code;
+    const at = getLineStart(code, Math.min(mergeRanges(entry.spans)[0][0], code.length));
+    if (isDottedLinesOnly(entry)) {
         const relativePath = getPath(box).slice(getPath(getSectionTable(box)).length);
         return getSpliced(code, at, at, `${getHeaderText(relativePath)} = {}\n`);
     }
@@ -366,28 +379,31 @@ function getCodeWithEmptyTable(code, entry, box) {
  * @returns {string} the new code.
  */
 function getCodeWithEmptyArray(code, entry, box) {
-    if (getNodeAtPath(parseToml(code).docs[0].root, getPath(box))) return code;
+    if (getNodeAtPath(readTomlTemplate(code).docs[0].root, getPath(box))) return code;
     return getCodeWithLineIn(code, getPath(box.entry.parent), box.entry.key, '[]', getLineStart(code, Math.min(mergeRanges(entry.spans)[0][0], code.length)));
 }
 
 /**
  * Returns the code with the keys of a table added to the root table (&mode=add): a key that is
- * there gets the new value, null is left out.
+ * there gets the new value, null is left out; every template tag outside the changed values stays.
  * @param {string} code - the code.
  * @param {*} data - the data to add.
  * @returns {string} the new code.
- * @throws {Error} when the data is no table or the code has a syntax error.
+ * @throws {Error} when the data is no table, the code has a syntax error, or a change would change a template tag.
  */
 export function mergeTomlData(code, data) {
     if (!isPlainObject(data)) throw new Error('Only a table (an object) can be added to a TOML document');
     let result = code;
     for (const key of Object.keys(data)) {
-        const model = parseToml(result);
+        const model = readTomlTemplate(result);
         if (model.broken) throw new Error('The document has a syntax error - fix it first');
         const root = model.docs[0].root;
         const entry = root.entries.find(item => item.key === key);
         if (data[key] === null || data[key] === undefined) continue;
-        result = entry ? editTomlCode(result, { kind: 'value', node: entry.node, value: data[key] }).code : editTomlCode(result, { kind: 'add', box: root, key, value: data[key] }).code;
+        const change = entry ? { kind: 'value', node: entry.node, value: data[key] } : { kind: 'add', box: root, key, value: data[key] };
+        const code = editTomlCode(result, change).code;
+        checkTemplateEdit(result, change, code);
+        result = code;
     }
     return result;
 }

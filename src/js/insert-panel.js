@@ -3,11 +3,11 @@
  * the tree, one undo step; a date is today's), and TOML snippets written at the cursor in the code.
  */
 
-import { escapeHtml, getAliasTarget, getIndentUnit } from './datatree.js?v=12';
+import { escapeHtml, getAliasTarget, getIndentUnit } from './datatree.js?v=13';
 import { state, areas, ui, CHOOSE_VALUE, ROOT_IS_VALUE, showToast } from './state.js?v=2';
-import { editData } from './tree-edit.js?v=3';
-import { writeCodeRange } from './code-input.js?v=3';
-import { addHistoryStep } from './history.js?v=3';
+import { editData } from './tree-edit.js?v=4';
+import { writeCodeRange } from './code-input.js?v=4';
+import { addHistoryStep } from './history.js?v=4';
 
 /** The empty value of each type the tab adds; "today" stands for today's date. */
 const ADD_VALUES = { string: '', number: 0, boolean: true, datetime: 'today', object: {}, array: [] };

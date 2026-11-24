@@ -3,16 +3,19 @@
  * moved or removed. Each one is written into the code by datatree.js editCode() as one undo
  * step and keeps the rest of the code and its comments as they are (editTomlCode() of toml-edit.js);
  * then the changed entry is selected. What TOML cannot write in place is refused with a message.
+ * In the example view of a template a change leads back to the template's own nodes
+ * (tree-views.js); a change of text that holds an example is refused with a message.
  */
 
-import { editCode, getDocIndex, getAliasTarget } from './datatree.js?v=12';
-import { isDateTime } from './toml.js?v=6';
+import { editCode, getDocIndex, getAliasTarget } from './datatree.js?v=13';
+import { isDateTime } from './toml.js?v=7';
 import {
     state, areas, EDITOR, SYNTAX_ERROR_FIRST, CHOOSE_VALUE, ROOT_IS_VALUE, hasData, showToast,
 } from './state.js?v=2';
-import { setCode, addPendingHistoryStep } from './history.js?v=3';
-import { showCodePosition } from './code-view.js?v=3';
-import { renderNode } from './node-panel.js?v=3';
+import { setCode, addPendingHistoryStep } from './history.js?v=4';
+import { showCodePosition } from './code-view.js?v=4';
+import { renderNode } from './node-panel.js?v=4';
+import { getTreeCodeRange, getTreePlace, getTemplateChange } from './tree-views.js?v=1';
 
 /**
  * A number as typed into the tree, as TOML writes it: decimal with "_" between digits, a
@@ -100,13 +103,15 @@ function getTypedNumber(text, trimmed) {
  * @returns {true|string} true, or the reason the change did not take place.
  */
 export function editData(change, { doc } = {}) {
-    const docIndex = doc ?? getChangeDocIndex(change);
+    let templateChange;
+    try { templateChange = getTemplateChange(change); } catch (e) { showToast(e.message); return e.message; }
+    const docIndex = doc ?? getChangeDocIndex(templateChange);
     if (state.model.broken || state.model.docs[docIndex]?.broken) { showToast(SYNTAX_ERROR_FIRST); return 'broken'; }
     let result;
-    try { result = editCode(EDITOR.editor, state.code, change); } catch (e) { showToast(e.message); return e.message; }
+    try { result = editCode(EDITOR.editor, state.code, templateChange); } catch (e) { showToast(e.message); return e.message; }
     addPendingHistoryStep();
     setCode(result.code);
-    areas.tree.select({ doc: docIndex, path: result.path });
+    areas.tree.select(getTreePlace(docIndex, result.path));
     showSelectedEntry();
     renderNode();
     return true;
@@ -131,8 +136,8 @@ function getChangeDocIndex(change) {
 function showSelectedEntry() {
     const info = areas.tree.getSelectedInfo();
     if (!info) return;
-    const start = info.entry ? info.entry.start : info.node.start;
-    showCodePosition(start, false, Math.max(start, info.node.end));
+    const range = getTreeCodeRange(info.entry ? info.entry.start : info.node.start, info.node.end);
+    showCodePosition(range.start, false, range.end);
 }
 
 /**

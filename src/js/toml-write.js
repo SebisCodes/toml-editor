@@ -5,7 +5,7 @@
  * "value".
  */
 
-import { getPlainValue } from './datatree.js?v=12';
+import { getPlainValue } from './datatree.js?v=13';
 import { parseToml, readDateTime } from './toml-read.js?v=3';
 
 /** A key that needs no quotes. */

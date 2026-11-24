@@ -1,0 +1,33 @@
+# Order confirmation for <<name>>
+orderNumber = <<orderNumber>>
+greeting = "Dear <<name>>,"
+paid = <<paid>>
+tags = ["order", <<tag>>]
+letter = """
+Dear <<name>>,
+Thank you for your order.
+"""
+
+[customer]
+name = "<<name>>"
+street = '<<street>>'
+postalCode = "<<postalCode>>"
+city = "<<city>>"
+location = { latitude = <<latitude>>, longitude = <<longitude>> }
+
+<<?hasNote>>
+[note]
+text = "<<note>>"
+<</?hasNote>>
+
+<<?items>>
+[[items]]
+title = "<<title>>"
+quantity = <<quantity>>
+price = <<price>>
+<</?items>>
+
+[[items]]
+title = "Shipping"
+quantity = 1
+price = 0

@@ -3,8 +3,8 @@
  * around "=", headers and keys without indentation, one empty line before every table header,
  * at most one empty line in a row, inline tables as { a = 1 }, no spaces at the ends of lines.
  * Values are rewritten only where that cannot change them (spacing inside inline tables and
- * one-line arrays); strings over several lines and the lines of a multi-line array keep their
- * layout.
+ * one-line arrays); strings over several lines keep every character of their text, the lines of
+ * a multi-line array keep their layout, and a quoted key keeps its text.
  *
  * formatToml() runs these steps:
  *   1. read the code (with \n line breaks);
@@ -95,13 +95,14 @@ function getFormattedLines(code, model) {
     const lines = [];
     let position = 0, blankLines = 0;
     for (const line of code.split('\n')) {
-        const lineStart = position;
+        const lineStart = position, lineEnd = position + line.length;
         position += line.length + 1;
         if (strings.some(([start, end]) => lineStart > start && lineStart < end)) { lines.push(line); blankLines = 0; continue; }
-        const trimmed = line.replace(/[ \t]+$/, '');
+        // the spaces at the end of a line that opens a multi-line string belong to its text
+        const trimmed = strings.some(([start, end]) => start < lineEnd && end > lineEnd) ? line : line.replace(/[ \t]+$/, '');
         if (!trimmed.trim()) { blankLines++; if (blankLines <= 1 && lines.length) lines.push(''); continue; }
         const indent = trimmed.match(/^[ \t]*/)[0];
-        if (isInMultiLineArray(model, lineStart + indent.length)) lines.push(line.replace(/[ \t]+$/, ''));
+        if (isInMultiLineArray(model, lineStart + indent.length)) lines.push(trimmed);
         else addFormattedLine(lines, trimmed.slice(indent.length));
         blankLines = 0;
     }
@@ -120,9 +121,39 @@ function getFormattedLines(code, model) {
 function addFormattedLine(lines, body) {
     if (/^\[/.test(body)) {
         if (lines.length && lines[lines.length - 1] !== '' && !/^#/.test(lines[lines.length - 1].trim())) lines.push('');
-        lines.push(body.replace(/^\[\[\s*(.*?)\s*\]\]/, '[[$1]]').replace(/^\[(?!\[)\s*(.*?)\s*\]/, '[$1]'));
+        lines.push(formatHeader(body));
     } else if (/^#/.test(body)) lines.push(body);
     else lines.push(getSpacedAssignment(body));
+}
+
+/**
+ * Returns a header line with the spaces inside its brackets removed at both ends; the key between
+ * them, quoted keys too, keeps its text.
+ * @param {string} body - the line, starting with "[".
+ * @returns {string} the line with "[key]" or "[[key]]".
+ */
+function formatHeader(body) {
+    const open = body.startsWith('[[') ? 2 : 1;
+    const close = findHeaderEnd(body, open);
+    if (close < 0) return body;
+    return body.slice(0, open) + body.slice(open, close).trim() + body.slice(close);
+}
+
+/**
+ * Returns the position of the "]" that ends the key of a header, past quoted keys.
+ * @param {string} body - the header line.
+ * @param {number} start - where the key starts, after the opening brackets.
+ * @returns {number} the position of that "]", -1 when the line has none.
+ */
+function findHeaderEnd(body, start) {
+    let quote = '';
+    for (let k = start; k < body.length; k++) {
+        const character = body[k];
+        if (quote) { if (character === '\\' && quote === '"') k++; else if (character === quote) quote = ''; continue; }
+        if (character === '"' || character === "'") quote = character;
+        else if (character === ']') return k;
+    }
+    return -1;
 }
 
 /**
@@ -147,19 +178,28 @@ function isInMultiLineArray(model, position) {
 
 /**
  * Returns "key=value" as "key = value": the first "=" outside quotes gets one space on each
- * side, and the dots of a dotted key lose their spaces.
+ * side, and the dots of a dotted key lose their spaces; a quoted key keeps its text.
  * @param {string} line - the line.
  * @returns {string} the line, as it is when it has no "=" outside quotes.
  */
 function getSpacedAssignment(line) {
-    let quote = '';
+    let quote = '', keyText = '', bareStart = 0;
     for (let k = 0; k < line.length; k++) {
         const character = line[k];
-        if (quote) { if (character === '\\' && quote === '"') k++; else if (character === quote) quote = ''; continue; }
-        if (character === '"' || character === "'") { quote = character; continue; }
-        if (character === '=') return line.slice(0, k).replace(/[ \t]+$/, '').replace(/[ \t]*\.[ \t]*/g, '.') + ' = ' + line.slice(k + 1).replace(/^[ \t]+/, '');
+        if (quote) { if (character === '\\' && quote === '"') k++; else if (character === quote) { quote = ''; keyText += line.slice(bareStart, k + 1); bareStart = k + 1; } continue; }
+        if (character === '"' || character === "'") { quote = character; keyText += formatKeyDots(line.slice(bareStart, k)); bareStart = k; continue; }
+        if (character === '=') return (keyText + formatKeyDots(line.slice(bareStart, k))).replace(/[ \t]+$/, '') + ' = ' + line.slice(k + 1).replace(/^[ \t]+/, '');
     }
     return line;
+}
+
+/**
+ * Returns a part of a key outside quotes with the spaces around its dots removed.
+ * @param {string} part - the part of the key between quoted keys.
+ * @returns {string} the part.
+ */
+function formatKeyDots(part) {
+    return part.replace(/[ \t]*\.[ \t]*/g, '.');
 }
 
 /**

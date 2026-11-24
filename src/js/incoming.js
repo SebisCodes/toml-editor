@@ -3,12 +3,12 @@
  * around the editor or ?src= (importExternalDocument, called by sync.js).
  */
 
-import { parse, mergeData, getModelValue } from './datatree.js?v=12';
+import { parse, mergeData, getModelValue } from './datatree.js?v=13';
 import { store } from './files.js?v=8';
-import { VIEWER } from './sync.js?v=23';
+import { VIEWER } from './sync.js?v=24';
 import { state, ui, EDITOR, AI_DOCUMENT, showToast } from './state.js?v=2';
-import { setCode } from './history.js?v=3';
-import { createDocument, openDocument } from './documents.js?v=3';
+import { setCode } from './history.js?v=4';
+import { createDocument, openDocument } from './documents.js?v=4';
 
 /**
  * Which document a received document goes to.

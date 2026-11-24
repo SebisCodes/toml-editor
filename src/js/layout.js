@@ -1,15 +1,16 @@
 /**
  * The layout of the work area: the splitter between code and tree (dragged or moved with the
- * arrow keys, remembered), the tabs of the side panel, the views on narrow screens, and the
- * closing of dialogs (their close buttons and a click on the backdrop).
+ * arrow keys, remembered), the side panel (a drawer on the desktop, closed at the start) and its
+ * tabs, the views on narrow screens, and the closing of dialogs (their close buttons and a click
+ * on the backdrop).
  */
 
 import { state, ui, getElement, getElements, getClamped } from './state.js?v=2';
-import { saveToStorage } from './storage.js?v=3';
-import { syncScroll } from './code-view.js?v=3';
-import { renderNode } from './node-panel.js?v=3';
-import { renderConvert } from './convert-panel.js?v=3';
-import { renderSchema } from './schema-panel.js?v=3';
+import { saveToStorage } from './storage.js?v=4';
+import { syncScroll } from './code-view.js?v=4';
+import { renderNode } from './node-panel.js?v=4';
+import { renderConvert } from './convert-panel.js?v=4';
+import { renderSchema } from './schema-panel.js?v=4';
 import { openDialog } from './dialogs.js?v=5';
 
 /** The smallest share of the width the code takes. */
@@ -33,7 +34,8 @@ export function showSplit() {
 }
 
 /**
- * Connects the splitter, the tabs of the side panel and the views on narrow screens.
+ * Connects the splitter, the side panel's button, the drawer's place below the tree's bar and the
+ * views on narrow screens.
  * @returns {void}
  */
 export function startLayout() {
@@ -42,6 +44,43 @@ export function startLayout() {
         if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { state.split = getClamped(state.split + (event.key === 'ArrowLeft' ? -SPLIT_STEP : SPLIT_STEP), MIN_SPLIT, MAX_SPLIT); showSplit(); saveToStorage(); }
     });
     getElements('[data-pane]').forEach(button => button.addEventListener('click', () => showPane(button.dataset.pane)));
+    showSidePanel(false);
+    getElement('#btn-panel').addEventListener('click', () => showSidePanel(ui.work.dataset.panel !== 'open'));
+    getElement('#side-panel').addEventListener('keydown', closeSidePanelOnEscape);
+    watchTreeBarHeight();
+}
+
+/**
+ * Keeps the height of the tree's bar as --tree-bar on the work area: the side panel's drawer
+ * starts below the bar, so the bar's controls stay in view and usable while it is open. The bar
+ * is taller when its controls wrap (narrow work area, long labels of a language).
+ * @returns {void}
+ */
+function watchTreeBarHeight() {
+    const bar = getElement('.draw-pane > .pane-header');
+    const observer = new ResizeObserver(() => ui.work.style.setProperty('--tree-bar', bar.offsetHeight + 'px'));
+    observer.observe(bar);
+}
+
+/**
+ * Opens or closes the side panel's drawer.
+ * @param {boolean} isOpen - true to open it.
+ * @returns {void}
+ */
+export function showSidePanel(isOpen) {
+    ui.work.dataset.panel = isOpen ? 'open' : 'closed';
+    getElement('#btn-panel').setAttribute('aria-expanded', String(isOpen));
+}
+
+/**
+ * Closes the side panel's drawer with Escape inside it and puts the focus on its button.
+ * @param {KeyboardEvent} event - the key in the side panel.
+ * @returns {void}
+ */
+function closeSidePanelOnEscape(event) {
+    if (event.key !== 'Escape' || ui.work.dataset.panel !== 'open' || event.target.closest('dialog')) return;
+    showSidePanel(false);
+    getElement('#btn-panel').focus();
 }
 
 /**
@@ -53,7 +92,7 @@ export function startLayout() {
 function startSplitDrag(event) {
     splitter.setPointerCapture(event.pointerId);
     const bounds = ui.work.getBoundingClientRect();
-    const available = bounds.width - getElement('.inspector').offsetWidth - splitter.offsetWidth;
+    const available = bounds.width - splitter.offsetWidth;
     /**
      * Moves the split with the pointer.
      * @param {PointerEvent} moveEvent - the pointer's move.

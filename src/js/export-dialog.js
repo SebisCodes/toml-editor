@@ -9,8 +9,8 @@ import { createZip } from './zip.js?v=4';
 import { saveFile, getSafeName } from './util.js?v=3';
 import { openDialog } from './dialogs.js?v=5';
 import { state, areas, ui, EDITOR, getElement, showToast } from './state.js?v=2';
-import { updateModel, getDocumentFormat } from './model.js?v=3';
-import { getConvertedText } from './conversion.js?v=3';
+import { updateModel, getDocumentFormat } from './model.js?v=4';
+import { getConvertedText } from './conversion.js?v=4';
 
 /** The formats of the Export dialog with their file extension and media type. */
 const EXPORT_FORMATS = {

@@ -8,7 +8,8 @@
   editing   every change from the tree (value, key, add, duplicate, move, remove, on every entry of
             every valid document) gives valid TOML holding exactly the expected data, or a refusal
             with a message
-  format    Format keeps the data and gives the same code when run twice; highlighting keeps the text
+  format    Format keeps the data and the text of every multi-line string and gives the same code
+            when run twice; highlighting keeps the text
   writing   data written as TOML (convertToToml) reads back the same
 Needs Node and Python 3.11 or later."""
 import datetime
@@ -174,6 +175,8 @@ if not r.returncode:
             probs.append(f'format gives invalid TOML ({e}): ' + repr(x['src'])[:80])
         if not x['idem']:
             probs.append('format twice differs: ' + repr(x['src'])[:80])
+        if not x['kept']:
+            probs.append('format changes the text of a multi-line string: ' + repr(x['src'])[:80])
         if not x['hl']:
             probs.append('highlighting changes the text: ' + repr(x['src'])[:80])
     for p in probs[:3]:

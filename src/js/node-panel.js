@@ -5,10 +5,11 @@
  * type of their own.
  */
 
-import { escapeHtml, formatPath, getAliasTarget } from './datatree.js?v=12';
+import { escapeHtml, formatPath, getAliasTarget } from './datatree.js?v=13';
 import { state, areas, ui, getElement, showToast, hasData, formatSize } from './state.js?v=2';
 import { getLineIndex, getColumnIndex } from './text-position.js?v=2';
-import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=3';
+import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=4';
+import { getTreeCodeRange } from './tree-views.js?v=1';
 
 /** The types of the type menu, in its order. */
 const TYPES = ['string', 'number', 'boolean', 'datetime', 'object', 'array'];
@@ -96,9 +97,11 @@ function getTableKindHint(resolved) {
  * @returns {string} the text, e.g. "3 keys · line 4, column 3 · 120 B".
  */
 function getNodeInfo(node, entry, resolved, isBox) {
-    const size = new Blob([state.code.slice(entry ? entry.start : node.start, node.end)]).size;
+    const range = getTreeCodeRange(entry ? entry.start : node.start, node.end);
+    const start = getTreeCodeRange(node.start, node.end).start;
+    const size = new Blob([state.code.slice(range.start, range.end)]).size;
     const count = isBox ? `${resolved.entries.length} ${resolved.type === 'object' ? (resolved.entries.length === 1 ? 'key' : 'keys') : resolved.entries.length === 1 ? 'entry' : 'entries'} · ` : '';
-    return `${count}line ${getLineIndex(node.start) + 1}, column ${getColumnIndex(node.start) + 1} · ${formatSize(size)}`;
+    return `${count}line ${getLineIndex(start) + 1}, column ${getColumnIndex(start) + 1} · ${formatSize(size)}`;
 }
 
 /**

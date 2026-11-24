@@ -36,6 +36,21 @@ def check_that(cond, what):
         failures.append(what)
 
 
+def show_side_panel(page, is_open):
+    """Opens or closes the side panel's drawer (it is closed at the start).
+
+    Args:
+        page (Page): the editor's page.
+        is_open (bool): True to open it, False to close it.
+
+    Returns:
+        None: the side panel is open or closed.
+    """
+    button = page.locator('#btn-panel')
+    if button.count() and button.is_visible() and (button.get_attribute('aria-expanded') == 'true') != is_open:
+        button.click()
+
+
 def set_code(page, text):
     """Sets the editor's code and waits for the tree.
 
@@ -179,6 +194,7 @@ with sync_playwright() as pw:
 
     # --- Convert ---
     set_code(page, '[[fruit]]\nid = 1\nname = "Apple"\ncode = "007"\n\n[[fruit]]\nid = 2\nname = "Pear, green"\ncode = "x"\n')
+    show_side_panel(page, True)
     page.click('[data-itab=convert]')
     page.wait_for_timeout(300)
     check_that(page.input_value('#cv-out').startswith('{\n  "fruit": [\n    {\n      "id": 1,'), 'Convert to JSON')
@@ -197,6 +213,7 @@ with sync_playwright() as pw:
     page.wait_for_timeout(300)
     check_that(page.input_value('#cv-out') == '{\n  "when": "2026-11-15T08:30:00Z"\n}\n', 'a date becomes text in JSON')
     page.click('[data-itab=node]')
+    show_side_panel(page, False)
 
     # --- JSON Schema (a schema written in TOML) ---
     page.click('#btn-new')
@@ -208,6 +225,7 @@ with sync_playwright() as pw:
     page.click('[data-new=blank]')
     page.wait_for_timeout(200)
     set_code(page, 'port = 70000\n')
+    show_side_panel(page, True)
     page.click('[data-itab=schema]')
     page.wait_for_timeout(200)
     page.select_option('#sc-doc', label='Server schema')
@@ -218,6 +236,7 @@ with sync_playwright() as pw:
     set_code(page, 'name = "web"\nport = 8080\n')
     check_that(get_state(page, 'S.problems.length') == 0 and 'fits the schema' in page.inner_text('#schema-wrap'), 'valid data fits the schema')
     page.click('[data-itab=node]')
+    show_side_panel(page, False)
 
     # --- Templates, My documents ---
     for k, name in [('pyproject', 'pyproject.toml'), ('cargo', 'Cargo.toml'), ('hugo', 'Hugo site'), ('netlify', 'Netlify'), ('table', 'Table')]:

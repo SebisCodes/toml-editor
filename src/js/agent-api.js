@@ -4,17 +4,18 @@
  * Every change goes through setCode() or a change of the data, so each one is an undo step.
  */
 
-import { formatPath, parsePath, getNodeAtPath, getPlainValue, getAliasTarget } from './datatree.js?v=12';
+import { formatPath, parsePath, getNodeAtPath, getPlainValue, getAliasTarget } from './datatree.js?v=13';
 import { BLANK } from './samples.js?v=4';
 import { store } from './files.js?v=8';
 import { state, areas, ui, AI_DOCUMENT } from './state.js?v=2';
 import { getLineIndex, getColumnIndex, getLinePosition } from './text-position.js?v=2';
-import { getSchemaInfo } from './model.js?v=3';
-import { setCode } from './history.js?v=3';
-import { showCodePosition } from './code-view.js?v=3';
-import { editData } from './tree-edit.js?v=3';
-import { selectNodeAtCursor } from './tree-view.js?v=3';
-import { openDocument } from './documents.js?v=3';
+import { getSchemaInfo } from './model.js?v=4';
+import { setCode } from './history.js?v=4';
+import { showCodePosition } from './code-view.js?v=4';
+import { editData } from './tree-edit.js?v=4';
+import { selectNodeAtCursor } from './tree-view.js?v=4';
+import { openDocument } from './documents.js?v=4';
+import { getTemplatePath } from './tree-views.js?v=1';
 
 /**
  * A problem with its line and column, for the prompt and the tools.
@@ -50,12 +51,12 @@ export function getProblemList() {
  *   text and the page's context.
  */
 export function getPromptState() {
-    const selected = areas.tree.getSelectedInfo();
+    const selected = getTemplatePath(areas.tree.getSelectedInfo());
     const schema = getSchemaInfo();
     return {
         code: state.code, name: state.name, files: store.getSortedEntries().map(entry => entry.name),
         sel: state.code.slice(ui.ta.selectionStart, ui.ta.selectionEnd),
-        path: selected && selected.path.length ? formatPath(selected.path) : '',
+        path: selected.length ? formatPath(selected) : '',
         schema: schema && schema.name ? schema.name : '',
         problems: getProblemList().map(problem => `line ${problem.line}, column ${problem.col}: ${problem.msg}`),
         context: areas.sync?.getContext() || null,

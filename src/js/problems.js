@@ -3,11 +3,12 @@
  * line and column. A click on a problem selects its place in the code and its value in the tree.
  */
 
-import { escapeHtml, getNodeAtPosition } from './datatree.js?v=12';
+import { escapeHtml } from './datatree.js?v=13';
+import { getTreeNodeAtCode } from './tree-views.js?v=1';
 import { state, areas, ui, NARROW_SCREEN } from './state.js?v=2';
 import { getLineIndex, getColumnIndex } from './text-position.js?v=2';
-import { showCodePosition, getProblemClass } from './code-view.js?v=3';
-import { showPane } from './layout.js?v=3';
+import { showCodePosition, getProblemClass } from './code-view.js?v=4';
+import { showPane } from './layout.js?v=4';
 
 /** The most problems the list shows. */
 const MAX_LISTED_PROBLEMS = 80;
@@ -82,6 +83,6 @@ function showClickedProblem(event) {
     const problem = state.problems[+row.dataset.prob];
     if (NARROW_SCREEN.matches) showPane('code');
     showCodePosition(problem.pos, true, Math.max(problem.pos, Math.min(problem.end ?? problem.pos, state.code.length)));
-    const node = state.model && getNodeAtPosition(state.model, problem.pos);
+    const node = getTreeNodeAtCode(problem.pos);
     if (node) areas.tree.selectNode(node);
 }

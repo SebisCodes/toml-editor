@@ -5,9 +5,10 @@
  * and leaves the code it gets as it is; toml-edit.js picks the right one for each change.
  */
 
-import { getPath, getNodeAtPath } from './datatree.js?v=12';
-import { parseToml, CONTROL_CHARACTER } from './toml-read.js?v=3';
-import { formatTomlKey, formatInlineValue, formatArray, isDateTime, getHeaderText, getTableLines, isTableArray, isHeaderNeeded } from './toml-write.js?v=3';
+import { getPath, getNodeAtPath } from './datatree.js?v=13';
+import { CONTROL_CHARACTER } from './toml-read.js?v=3';
+import { readTomlTemplate } from './toml-template.js?v=1';
+import { formatTomlKey, formatInlineValue, formatArray, isDateTime, getHeaderText, getTableLines, isTableArray, isHeaderNeeded } from './toml-write.js?v=4';
 import { getLineStart, getTrimmedEnd, mergeRanges, getSpliced } from './toml-text.js?v=2';
 
 
@@ -128,19 +129,25 @@ export function getCodeWithLine(code, model, table, key, text) {
 }
 
 /**
- * Returns the code with key = value in the table at a path; when that table is gone (it existed
- * only through what was removed), it comes back as a [header] at a header boundary.
+ * Returns the code with key = value in the table at a path. A table missing from the code (one
+ * that the removed places alone made) comes back at the place: as a dotted key line in the
+ * section whose dotted keys make it, else as a [header] at a header boundary.
  * @param {string} code - the code.
  * @param {Array<string|number>} path - the path of the table.
  * @param {string|number} key - the key.
  * @param {string} text - the value as TOML.
- * @param {number} at - the header boundary for a table that comes back.
+ * @param {number} at - where the removed places started: the line of a dotted key, or the header boundary for a [header].
+ * @param {Array<string|number>|null} [sectionPath] - the path of the table whose section held the table's dotted keys, null for a table of its own section.
  * @returns {string} the new code.
  */
-export function getCodeWithLineIn(code, path, key, text, at) {
-    const model = parseToml(code);
+export function getCodeWithLineIn(code, path, key, text, at, sectionPath = null) {
+    const model = readTomlTemplate(code);
     const table = getNodeAtPath(model.docs[0].root, path);
     if (table && table.type === 'object') return getCodeWithLine(code, model, table, key, text);
+    if (sectionPath) {
+        const lineStart = getLineStart(code, Math.min(at, code.length));
+        return getSpliced(code, lineStart, lineStart, `${[...path.slice(sectionPath.length), key].map(formatTomlKey).join('.')} = ${text}\n`);
+    }
     return getCodeWithSection(code, at, `[${getHeaderText(path)}]\n${formatTomlKey(key)} = ${text}\n`);
 }
 
@@ -203,8 +210,11 @@ export function getCodeWithSections(code, model, box, key, value) {
 export function getCodeWithReplacedSections(code, entry, value, path) {
     const first = mergeRanges(entry.spans)[0][0];
     const removed = getCodeWithoutSpans(code, entry);
-    const model = parseToml(removed);
-    const box = getNodeAtPath(model.docs[0].root, getPath(entry.parent)) || model.docs[0].root;
+    const model = readTomlTemplate(removed);
+    const parent = getNodeAtPath(model.docs[0].root, getPath(entry.parent));
+    // a table that existed only through the entry: the sections come at the next header after the place
+    if (!parent && !entry.parent.aot) return { code: getCodeWithSectionsAfter(removed, model, first, [...getPath(entry.parent), entry.key], value), path };
+    const box = parent || model.docs[0].root;
     // a line goes; the sections come at the next header after the table's other places
     if (entry.mode === 'line') return { code: getCodeWithSections(removed, model, box, entry.key, value), path };
     const at = getReplacementPlace(removed, model, first);
@@ -213,6 +223,20 @@ export function getCodeWithReplacedSections(code, entry, value, path) {
     const fullPath = [...getPath(entry.parent), entry.key];
     const text = entry.parent.aot ? [`[[${getHeaderText(fullPath)}]]`, ...getTableLines(value, fullPath, new Set())].join('\n') + '\n' : getSectionsText(value, fullPath);
     return { code: getCodeWithSection(removed, at, text), path };
+}
+
+/**
+ * Returns the code with a table (or array of tables) as sections at the next header after a place.
+ * @param {string} code - the code.
+ * @param {object} model - the code as read.
+ * @param {number} place - the place the sections follow.
+ * @param {Array<string|number>} path - the path of the table.
+ * @param {*} value - the table or array of tables.
+ * @returns {string} the new code.
+ */
+function getCodeWithSectionsAfter(code, model, place, path, value) {
+    const at = getSectionBoundary(code, model, getLineStart(code, Math.min(place, code.length)));
+    return getCodeWithSection(code, at, getSectionsText(value, path));
 }
 
 /**

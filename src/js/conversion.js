@@ -1,14 +1,15 @@
 /**
  * The open document in other formats (convert.js), Format (the document written anew by
  * formatToml() of toml.js, comments kept, one undo step), and the tidied code of a document a
- * page hands over with ?tidy=1 (sync.js).
+ * page hands over with ?tidy=1 (sync.js). A template that holds placeholders (?template=)
+ * stays as written: Format, Tidy and the conversions wait for the filled data.
  */
 
-import { parse, importYamlLibrary, getModelValue } from './datatree.js?v=12';
-import { formatToml } from './toml.js?v=6';
-import { convertToJson, convertToYaml, convertToCsv, convertToXml, convertToJsonl, getTreeText } from './convert.js?v=13';
+import { parse, importYamlLibrary, getModelValue, hasTemplateTags, TEMPLATE_FORMAT_MESSAGE } from './datatree.js?v=13';
+import { formatToml } from './toml.js?v=7';
+import { convertToJson, convertToYaml, convertToCsv, convertToXml, convertToJsonl, getTreeText } from './convert.js?v=14';
 import { state, areas, EDITOR, FIX_SYNTAX_ERROR, NO_DATA, hasData, showToast, translate } from './state.js?v=2';
-import { setCode } from './history.js?v=3';
+import { setCode } from './history.js?v=4';
 
 /** The indentation YAML gets when none is chosen. */
 const YAML_INDENT = 2;
@@ -30,7 +31,18 @@ const DEFAULT_INDENT = 2;
 function getConversionBlocker() {
     if (!hasData()) return NO_DATA;
     if (state.model.broken) return FIX_SYNTAX_ERROR;
+    if (hasTemplateTags(state.code)) return TEMPLATE_FORMAT_MESSAGE;
     return null;
+}
+
+/**
+ * Returns the code that "Open in another editor" converts (convert-to.js).
+ * @returns {string} the open document's code.
+ * @throws {Error} TEMPLATE_FORMAT_MESSAGE while the document holds template placeholders.
+ */
+export function getConvertibleCode() {
+    if (hasTemplateTags(state.code)) throw new Error(TEMPLATE_FORMAT_MESSAGE);
+    return state.code;
 }
 
 /**
@@ -74,6 +86,7 @@ function getJsonLines(value) {
 export function formatDocument() {
     if (!state.model || state.model.broken) { showToast(FIX_SYNTAX_ERROR); return; }
     if (!hasData()) { showToast(NO_DATA); return; }
+    if (hasTemplateTags(state.code)) { showToast(TEMPLATE_FORMAT_MESSAGE); return; }
     let formatted;
     try { formatted = formatToml(state.code); } catch (e) { showToast(e.message); return; }
     if (formatted === state.code) { showToast('The document is formatted already'); return; }
@@ -85,11 +98,13 @@ export function formatDocument() {
 
 /**
  * Returns a document's code as Format writes it, for a document the page hands over with
- * ?tidy=1 (sync.js); code with a syntax error or without data comes back as it is.
+ * ?tidy=1 (sync.js); code with a syntax error, without data or with template placeholders comes
+ * back as it is.
  * @param {string} code - the code.
  * @returns {Promise<string>} the tidied code.
  */
 export async function formatCodeAsStep(code) {
+    if (hasTemplateTags(code)) return code;
     const model = parse(EDITOR.editor, code);
     if (model.broken || !model.docs.some(doc => doc.root)) return code;
     try { return formatToml(code); } catch (e) { return code; }

@@ -3,10 +3,10 @@
  * behind it, a band on the line with the cursor, and the status below it (lines and size).
  */
 
-import { highlight, escapeHtml } from './datatree.js?v=12';
+import { highlight, escapeHtml } from './datatree.js?v=13';
 import { state, areas, ui, EDITOR, LINE_HEIGHT, NARROW_SCREEN, formatSize } from './state.js?v=2';
 import { getLineIndex, getColumnIndex } from './text-position.js?v=2';
-import { updateHistoryButtons } from './history.js?v=3';
+import { updateHistoryButtons } from './history.js?v=4';
 
 /** Longer code is shown without highlighting, so typing stays fast. */
 const MAX_HIGHLIGHT_LENGTH = 600000;

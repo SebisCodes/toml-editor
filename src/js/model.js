@@ -7,18 +7,22 @@
  *   1. read the code;
  *   2. show the download format (.toml) on the download button;
  *   3. collect the problems, with the schema check;
- *   4. draw the tree, the problems, the selected value and the open side panel tab.
+ *   4. build the view of a template (tree-views.js: the example view or the template view);
+ *   5. draw the tree, the controls of template placeholders, the problems, the selected value and
+ *      the open side panel tab.
  */
 
-import { parse, getModelValue, getSchemaProblems, TooManyValues } from './datatree.js?v=12';
+import { parse, getModelValue, getSchemaProblems, TooManyValues } from './datatree.js?v=13';
 import { store } from './files.js?v=8';
 import { state, areas, ui, EDITOR, getElement } from './state.js?v=2';
 import { getLineIndexIn } from './text-position.js?v=2';
-import { renderProblems } from './problems.js?v=3';
-import { renderMarks } from './code-view.js?v=3';
-import { renderNode } from './node-panel.js?v=3';
-import { renderSchema } from './schema-panel.js?v=3';
-import { renderConvertResult } from './convert-panel.js?v=3';
+import { renderProblems } from './problems.js?v=4';
+import { renderMarks } from './code-view.js?v=4';
+import { renderNode } from './node-panel.js?v=4';
+import { renderSchema } from './schema-panel.js?v=4';
+import { updateTreeView, getTreeModel } from './tree-views.js?v=1';
+import { renderTemplateControls } from './template-panel.js?v=1';
+import { renderConvertResult } from './convert-panel.js?v=4';
 
 /** How long the model waits after typing, in milliseconds. */
 const DEFAULT_MODEL_DELAY = 200;
@@ -89,11 +93,25 @@ export function updateModel() {
     state.model = parse(EDITOR.editor, state.code);
     showDownloadFormat();
     state.problems = getProblems();
-    areas.tree.render(state.model);
+    updateTreeView();
+    areas.tree.render(getTreeModel());
+    renderTemplateControls();
     renderProblems();
     renderNode();
     if (!ui.schema.hidden) renderSchema();
     if (!ui.convert.hidden) renderConvertResult();
+}
+
+/**
+ * Builds the view of a template again and draws the tree, the controls of template placeholders
+ * and the selected value: after a switch of the view, and when the page's examples change.
+ * @returns {void}
+ */
+export function renderTreeView() {
+    updateTreeView();
+    areas.tree.render(getTreeModel());
+    renderTemplateControls();
+    renderNode();
 }
 
 /**

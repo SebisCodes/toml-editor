@@ -2,14 +2,17 @@
  * The tree of the data (datatree.js createTree()) and the bar above it: a click in the tree
  * selects that entry in the code, the code cursor selects its value in the tree; keys and
  * values are edited in place; the buttons add, duplicate, move and remove entries; search
- * in keys and values; open and close all; copy the path.
+ * in keys and values; open and close all; copy the path. In the example view of a template the
+ * tree shows the filled data (tree-views.js): its places lead back to the code, and a key or value
+ * whose text holds an example is read-only.
  */
 
-import { createTree, getNodeAtPosition, formatPath } from './datatree.js?v=12';
+import { createTree, formatPath, getTemplateEditRefusal } from './datatree.js?v=13';
 import { state, areas, ui, getElement, showToast, translate, SYNTAX_ERROR_FIRST, CHOOSE_VALUE } from './state.js?v=2';
-import { showCodePosition, showLineBand } from './code-view.js?v=3';
-import { renderNode } from './node-panel.js?v=3';
-import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=3';
+import { showCodePosition, showLineBand } from './code-view.js?v=4';
+import { renderNode } from './node-panel.js?v=4';
+import { getTypedValue, editData, runEntryAction } from './tree-edit.js?v=4';
+import { getTreeCodeRange, getTreeNodeAtCode, getExampleEditRefusal } from './tree-views.js?v=1';
 
 /** How long the search waits after typing, in milliseconds. */
 const SEARCH_DELAY = 160;
@@ -41,9 +44,9 @@ export function createTreeArea() {
  * @returns {void}
  */
 function showPickedEntry(info, how) {
-    if (!info.node) { if (info.docStart != null) showCodePosition(info.docStart, false); return; }
-    const start = info.entry ? info.entry.start : info.node.start;
-    showCodePosition(start, false, Math.max(start, info.node.end));
+    if (!info.node) { if (info.docStart != null) showCodePosition(getTreeCodeRange(info.docStart, info.docStart).start, false); return; }
+    const range = getTreeCodeRange(info.entry ? info.entry.start : info.node.start, info.node.end);
+    showCodePosition(range.start, false, range.end);
     renderNode();
     if (how === 'search' || how === 'path') ui.tree.focus({ preventScroll: true });
 }
@@ -61,6 +64,8 @@ function showPickedEntry(info, how) {
 function editInTree({ what, info, text, phase }) {
     if (phase === 'start') {
         if (state.model.broken || state.model.docs[info.doc]?.broken) { showToast(SYNTAX_ERROR_FIRST); return 'broken'; }
+        const refusal = getExampleEditRefusal(what, info) || getTemplateEditRefusal(what, info.node);
+        if (refusal) { showToast(refusal); return refusal; }
         return true;
     }
     if (what === 'key') return editData({ kind: 'key', entry: info.entry, key: text });
@@ -180,6 +185,6 @@ function handleSelectionChange() {
  */
 export function selectNodeAtCursor() {
     if (!state.model || areas.tree.isEditing()) return;
-    const node = getNodeAtPosition(state.model, ui.ta.selectionStart);
+    const node = getTreeNodeAtCode(ui.ta.selectionStart);
     if (node) { areas.tree.selectNode(node); renderNode(); }
 }

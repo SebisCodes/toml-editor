@@ -4,6 +4,8 @@
  * AI sends its result to that page's server, which opens it here.
  */
 
+import { formatSiteText, formatDocumentData, formatAnswerPart } from './prompt-parts.js?v=1';
+
 const SITE = 'https://toml.giit.ch/';
 const PREFIX = 'tomleditor';
 /** The kind of the #toml= link and of the code fence. */
@@ -50,19 +52,6 @@ export const PROMPT_HEAD = `${PROMPT_BASE}\n\n${PROMPT_SAVING}`;
  */
 
 /**
- * Returns text from a website, marked as such: where it comes from (the real origin) and
- * fenced, so the AI can tell it apart from what the user writes.
- * @param {string} head - the heading ("RULES", "INSTRUCTIONS").
- * @param {string} site - the real origin of the page, "" when unknown.
- * @param {string} label - the page's own name for itself.
- * @param {string} text - the page's text.
- * @returns {string} the heading and the fenced text.
- */
-function formatSiteText(head, site, label, text) {
-    return `${head} ${site ? `FROM THE WEBSITE ${site}` : 'FROM THE WEBSITE'}${label && label !== site ? ` ("${label}")` : ''}\n\`\`\`text\n${text.replace(/`{3,}/g, "'''")}\n\`\`\``;
-}
-
-/**
  * Returns the part of the prompt about the page that holds the document.
  * @param {object} context - what the page says (plain text): host, title, rules and site.
  * @returns {string} the part of the prompt.
@@ -103,15 +92,17 @@ function formatRemotePrompt(state, remote, makeNew) {
     if (state.context && state.context.rules) out.push(formatSiteText('RULES', remote.site, remote.label, state.context.rules));
     const what = makeNew ? `Make a NEW document; leave "${state.name}" as it is.` : `Change my document "${state.name}".`;
     const link = `${SITE}#b64=<base64url of the UTF-8 TOML>${makeNew ? '&file=new&name=<short name>' : ''}`;
-    if (remote.endpoint && remote.key) out.push(`HOW TO ANSWER
+    const editorAnswer = remote.endpoint && remote.key ? `HOW TO ANSWER
 ${what} Send the result with one HTTP request (run it, do not only show it):
   POST ${remote.endpoint}
   Authorization: Bearer ${remote.key}
   Content-Type: application/json
   {"editor":"${KIND}","target":"${target}","name":"<short name>","content":"<the complete TOML document as one string>"}
 Build the JSON with a JSON library. The result then opens in my editor; tell me briefly what you did, or the server's error message.
-If you cannot send HTTP requests, give me the link ${link} and I paste your answer into the editor.`);
-    else out.push(`HOW TO ANSWER\n${what} Give me the link ${link}; I paste your answer into the editor (a clicked link does not reach it).`);
+If you cannot send HTTP requests, give me the link ${link} and I paste your answer into the editor.`
+        : `HOW TO ANSWER\n${what} Give me the link ${link}; I paste your answer into the editor (a clicked link does not reach it).`;
+    const answer = formatAnswerPart(remote, editorAnswer);
+    if (answer) out.push(answer);
     return out.join('\n\n');
 }
 
@@ -134,5 +125,5 @@ export function getPrompt(state, makeNew) {
     const problems = state.problems && state.problems.length ? `\nThe editor reports: ${state.problems.slice(0, MAX_LISTED_PROBLEMS).join('; ')}` : '';
     const schema = state.schema ? `\nThe editor checks it against my JSON Schema "${state.schema}".` : '';
     if (state.remote) head = `MY ${makeNew ? 'CURRENT' : ''} DOCUMENT "${state.name}"`.replace('  ', ' ');
-    return `${intro}\n\n${state.remote ? '' : `${list}\n${goal}\n\n`}${head}${state.sel ? ` (I have selected: "${state.sel.slice(0, MAX_SELECTION_LENGTH)}")` : ''}${state.path ? `\nThe tree shows ${state.path}.` : ''}${schema}${problems}\n\`\`\`${KIND}\n${state.code.trim()}\n\`\`\`\n\nMy request: `;
+    return `${intro}\n\n${state.remote ? '' : `${list}\n${goal}\n\n`}${head}${state.sel ? ` (I have selected: "${state.sel.slice(0, MAX_SELECTION_LENGTH)}")` : ''}${state.path ? `\nThe tree shows ${state.path}.` : ''}${schema}${problems}\n${formatDocumentData(KIND, state.code.trim())}\n\nMy request: `;
 }

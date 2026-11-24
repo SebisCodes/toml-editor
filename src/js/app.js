@@ -11,10 +11,11 @@
  * in the code marks its value in the tree.
  *
  * Start-up steps:
- *   1. TOML joins the data tree; the interface language (the AI prompt stays English) and the
- *      line wrap of the code;
+ *   1. TOML and the template syntax of ?template= join the data tree; the interface language
+ *      (the AI prompt stays English) and the line wrap of the code;
  *   2. connect the areas: errors of data that expands too far, storage, code view, problems,
- *      tree, side panel, documents, opening files, keyboard, layout, Export and the dialogs;
+ *      tree, side panel, documents, opening files, keyboard, layout, Export, the dialogs and the
+ *      controls of template placeholders;
  *   3. take the stored settings and open the last document (or the welcome example);
  *   4. read and draw the document, and again once the language pack is there;
  *   5. start the AI Assistant, the WebMCP tools, the AI status, "Open in another editor" and
@@ -22,41 +23,45 @@
  *   6. offer the test hook window.tomlEditor.
  */
 
-import { importYamlLibrary, TooManyValues, addFormat } from './datatree.js?v=12';
-import { TOML } from './toml.js?v=6';
+import { importYamlLibrary, TooManyValues, addFormat, setTemplateSyntax } from './datatree.js?v=13';
+import { getTemplateSyntax, getTemplateNameByAddress } from './template-tags.js?v=2';
+import { TOML } from './toml.js?v=7';
 import { START } from './samples.js?v=4';
-import { createAi } from './ai.js?v=9';
+import { createAi } from './ai.js?v=10';
 import { createMcp } from './mcp.js?v=5';
-import { createAiStatus } from './aistatus.js?v=8';
-import { createI18n } from './i18n.js?v=21';
+import { createAiStatus } from './aistatus.js?v=9';
+import { createI18n } from './i18n.js?v=22';
 import { createWrap } from './wrap.js?v=5';
 import { store } from './files.js?v=8';
-import { createSync } from './sync.js?v=23';
+import { createSync } from './sync.js?v=24';
 import './export-menu.js?v=6';
-import { startConvert } from './convert-to.js?v=14';
+import { startConvert } from './convert-to.js?v=15';
 import { state, areas, ui, EDITOR, STORAGE_FULL, showToast, translate } from './state.js?v=2';
-import { getSettings, startStorageSync } from './storage.js?v=3';
-import { setCode, addHistoryStep, undo, redo } from './history.js?v=3';
-import { updateModel } from './model.js?v=3';
-import { renderCode, syncScroll, showCodePosition, startCodeView } from './code-view.js?v=3';
-import { startCodeInput } from './code-input.js?v=3';
-import { startProblems } from './problems.js?v=3';
-import { createTreeArea, startTreeBar } from './tree-view.js?v=3';
-import { editData } from './tree-edit.js?v=3';
-import { renderNode, startNodePanel } from './node-panel.js?v=3';
-import { renderInsert, startInsertPanel } from './insert-panel.js?v=3';
-import { startConvertPanel } from './convert-panel.js?v=3';
-import { startSchemaPanel } from './schema-panel.js?v=3';
-import { formatCodeAsStep } from './conversion.js?v=3';
-import { showFileName, openDocument, createDocumentsDialog, startDocumentButtons } from './documents.js?v=3';
-import { startFileImport } from './file-import.js?v=3';
-import { startKeyboard } from './keyboard.js?v=3';
-import { showSplit, startLayout, startPanelTabs, startDialogs } from './layout.js?v=3';
-import { startExportDialog } from './export-dialog.js?v=3';
-import { receiveDocument, importExternalDocument } from './incoming.js?v=3';
+import { getSettings, startStorageSync } from './storage.js?v=4';
+import { setCode, addHistoryStep, undo, redo } from './history.js?v=4';
+import { updateModel, renderTreeView } from './model.js?v=4';
+import { renderCode, syncScroll, showCodePosition, startCodeView } from './code-view.js?v=4';
+import { startCodeInput } from './code-input.js?v=4';
+import { startProblems } from './problems.js?v=4';
+import { createTreeArea, startTreeBar } from './tree-view.js?v=4';
+import { editData } from './tree-edit.js?v=4';
+import { renderNode, startNodePanel } from './node-panel.js?v=4';
+import { renderInsert, startInsertPanel } from './insert-panel.js?v=4';
+import { startConvertPanel } from './convert-panel.js?v=4';
+import { startSchemaPanel } from './schema-panel.js?v=4';
+import { formatCodeAsStep, getConvertibleCode } from './conversion.js?v=4';
+import { showFileName, openDocument, createDocumentsDialog, startDocumentButtons } from './documents.js?v=4';
+import { startFileImport } from './file-import.js?v=4';
+import { startKeyboard } from './keyboard.js?v=4';
+import { showSplit, startLayout, startPanelTabs, startDialogs } from './layout.js?v=4';
+import { startExportDialog } from './export-dialog.js?v=4';
+import { receiveDocument, importExternalDocument } from './incoming.js?v=4';
+import { startTemplateControls } from './template-panel.js?v=1';
+import { createTemplateExamples } from './template-examples.js?v=2';
+import { getViewMode, getTreeModel } from './tree-views.js?v=1';
 import {
     getPromptState, getProblemList, getAgentValue, setAgentValue, getFileList, openFileByName, createFile, updateText, showAgentLine,
-} from './agent-api.js?v=3';
+} from './agent-api.js?v=4';
 
 /** The YAML package loads this long after the start, for converting to YAML. */
 const YAML_LIBRARY_DELAY = 1500;
@@ -69,6 +74,7 @@ startEditor();
  */
 function startEditor() {
     addFormat(EDITOR.editor, TOML);
+    setTemplateSyntax(getTemplateSyntax(getTemplateNameByAddress(location.search)));
     startLanguageAndWrap();
     connectAreas();
     openStartDocument();
@@ -114,6 +120,7 @@ function connectAreas() {
     startLayout();
     startExportDialog();
     startDialogs();
+    startTemplateControls();
 }
 
 /**
@@ -190,6 +197,8 @@ function startAiAndSync() {
         getRemote: () => areas.sync?.getAiSettings() || null,
         fetchKey: () => (areas.sync ? areas.sync.fetchKey() : Promise.resolve(null)),
         hasValidKey: () => !!areas.sync?.hasValidKey(),
+        handleAiClick: openEditorDialog => (areas.sync ? areas.sync.handleAiClick(openEditorDialog) : openEditorDialog()),
+        getKeyDecline: () => areas.sync?.getKeyDecline() || '',
     });
     const agent = createMcp({
         onUse: () => areas.aiStatus.addDelivery('agent'),
@@ -209,7 +218,7 @@ function startAiAndSync() {
         prefix: EDITOR.prefix, btn: document.getElementById('btn-ai'), box: document.getElementById('ai-status'),
         remote: () => areas.sync?.getAiSettings() || null, agent: () => agent,
     });
-    startConvert({ editor: 'toml', code: () => state.code, name: () => state.name, toast: showToast, t: translate });
+    startConvert({ editor: 'toml', code: getConvertibleCode, name: () => state.name, toast: showToast, t: translate });
     areas.sync = createSync(createSyncEditor());
 }
 
@@ -230,6 +239,8 @@ function createSyncEditor() {
         hookFor: id => store.getEntry(id)?.hook || null,
         setHookFor: (id, hook) => { try { store.setEntryFields(id, { hook }); } catch (e) { showToast(STORAGE_FULL); } },
         onAi: () => areas.ai?.updateRemote(),
+        parseTemplate: message => createTemplateExamples(message),
+        onTemplate: () => renderTreeView(),
     };
 }
 
@@ -242,5 +253,6 @@ function createTestHook() {
     return {
         state, store, setCode, undo, redo, receive: receiveDocument, revealInCode: showCodePosition, tree: areas.tree,
         sync: () => areas.sync, analyse: updateModel, change: editData, loadYaml: importYamlLibrary,
+        viewMode: getViewMode, treeModel: getTreeModel,
     };
 }

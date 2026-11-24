@@ -4,10 +4,10 @@
  * download or open in the sister editor (JSON).
  */
 
-import { getIndentUnit } from './datatree.js?v=12';
+import { getIndentUnit } from './datatree.js?v=13';
 import { saveFile, getSafeName } from './util.js?v=3';
 import { state, ui, EDITOR, getElement, showToast } from './state.js?v=2';
-import { getConvertedText, formatDocument } from './conversion.js?v=3';
+import { getConvertedText, formatDocument } from './conversion.js?v=4';
 
 /** The file extension of each conversion. */
 const CONVERT_EXTENSIONS = { yaml: 'yaml', csv: 'csv', xml: 'xml', txt: 'txt', json: 'json', jsonl: 'jsonl', toml: 'toml' };

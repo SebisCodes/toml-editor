@@ -9,8 +9,8 @@
 
 import { state, areas, SETTINGS_KEY, showToast } from './state.js?v=2';
 import { store } from './files.js?v=8';
-import { showFileName } from './documents.js?v=3';
-import { setCode } from './history.js?v=3';
+import { showFileName } from './documents.js?v=4';
+import { setCode } from './history.js?v=4';
 
 const STORAGE_FULL_DOWNLOAD = 'The browser storage is full - download and delete documents under "My documents"';
 let storageFullShown = false;
